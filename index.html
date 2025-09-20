@@ -1,0 +1,2327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英语学习每日智能奖励清单 - 数据管理版</title>
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <style>
+        :root {
+            --primary-color: #4b6cb7;
+            --secondary-color: #182848;
+            --accent-color: #28a745;
+            --light-bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-dark: #333333;
+            --text-light: #6c757d;
+            --sync-color: #d4d4aa; /* 同步按钮颜色调暗 */
+            --danger-color: #dc3545;
+            --countdown-color: #ff6b35; /* 倒计时颜色更醒目 */
+            --safe-area-inset-top: env(safe-area-inset-top);
+            --safe-area-inset-bottom: env(safe-area-inset-bottom);
+        }
+        
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-top: calc(20px + var(--safe-area-inset-top));
+            padding-bottom: calc(20px + var(--safe-area-inset-bottom));
+            background-color: var(--light-bg);
+            color: var(--text-dark);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            position: relative;
+        }
+        
+        .sync-status {
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .sync-icon {
+            animation: spin 2s linear infinite;
+            display: none;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .countdown {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-size: 16px; /* 增大字体 */
+            font-weight: bold; /* 加粗 */
+            backdrop-filter: blur(5px);
+            color: var(--countdown-color); /* 使用醒目颜色 */
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            animation: pulse 2s infinite; /* 添加脉动动画 */
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .nav-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            -webkit-overflow-scrolling: touch;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        
+        .nav-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            min-width: 120px;
+        }
+        
+        .nav-tab.active {
+            border-bottom: 3px solid var(--primary-color);
+            font-weight: 600;
+            background-color: rgba(75, 108, 183, 0.1);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+        
+        .progress-container {
+            text-align: center;
+        }
+        
+        .progress-bar {
+            height: 28px;
+            background-color: #e9ecef;
+            border-radius: 6px;
+            margin: 15px 0;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border-radius: 6px;
+            transition: width 0.7s ease;
+            width: 0%;
+        }
+        
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: var(--card-bg);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        th, td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            word-break: break-word;
+        }
+        
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:hover {
+            background-color: rgba(75, 108, 183, 0.05);
+        }
+        
+        .points {
+            font-weight: bold;
+            color: var(--accent-color);
+            text-align: center;
+        }
+        
+        .category {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+        
+        .checkbox {
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            background-color: #fff;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            display: inline-block;
+            position: relative;
+            margin: 0;
+            vertical-align: middle;
+        }
+        
+        .checkbox:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .checkbox:checked::after {
+            content: "✓";
+            position: absolute;
+            color: white;
+            font-size: 18px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .data-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        
+        .btn {
+            padding: 14px 24px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            touch-action: manipulation;
+            min-height: 44px;
+        }
+        
+        .btn:hover, .btn:active {
+            background-color: var(--secondary-color);
+        }
+        
+        .btn-sync {
+            background-color: var(--sync-color);
+            color: #333;
+        }
+        
+        .btn-sync:hover {
+            background-color: #c0c090;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+        
+        .btn-danger:hover {
+            background-color: #bb2d3b;
+        }
+        
+        .btn-small {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            background-color: var(--secondary-color);
+            color: white;
+            border-radius: 8px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 10px 0;
+        }
+        
+        .save-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--accent-color);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+        
+        .sync-settings {
+            background-color: #f0f7ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .data-records {
+            margin-top: 30px;
+        }
+        
+        .record-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+        
+        .search-filter {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .search-filter input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-light);
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* 移动设备优化 */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+                padding-top: calc(15px + var(--safe-area-inset-top));
+                padding-bottom: calc(15px + var(--safe-area-inset-bottom));
+            }
+            
+            .header {
+                padding: 20px 15px;
+            }
+            
+            .countdown, .sync-status {
+                position: static;
+                margin-top: 10px;
+                display: inline-block;
+            }
+            
+            .data-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-tabs {
+                flex-direction: row;
+                overflow-x: auto;
+            }
+            
+            .nav-tab {
+                min-width: 100px;
+                padding: 12px 10px;
+                font-size: 14px;
+            }
+            
+            table {
+                font-size: 14px;
+            }
+            
+            th, td {
+                padding: 12px 8px;
+            }
+            
+            .btn {
+                padding: 12px 20px;
+                width: 100%;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+            
+            .record-actions {
+                flex-direction: column;
+            }
+            
+            .btn-small {
+                width: 100%;
+            }
+        }
+        
+        /* 平板设备优化 */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            body {
+                padding: 20px;
+            }
+            
+            .nav-tab {
+                min-width: 110px;
+                padding: 14px 10px;
+            }
+        }
+        
+        /* 防止iOS缩放 */
+        input, select, textarea {
+            font-size: 16px !important;
+        }
+        
+        /* 防止iOS点击高光 */
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 统计标签页样式 */
+        .stats-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .stats-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-weight: 600;
+        }
+        
+        .stats-tab.active {
+            border-bottom: 3px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .stats-content {
+            display: none;
+        }
+        
+        .stats-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .stats-summary {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-chart {
+            height: 200px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .chart-bar {
+            width: 30px;
+            background-color: var(--primary-color);
+            margin: 0 5px;
+            border-radius: 4px 4px 0 0;
+            position: relative;
+            min-height: 10px;
+        }
+        
+        .chart-label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>英语学习智能奖励系统</h1>
+        <p>基于强化学习方法的84日CET-4到CET-6提升计划</p>
+        <div class="sync-status">
+            <span class="sync-icon">🔄</span>
+            <span id="sync-status-text">未同步</span>
+        </div>
+        <div class="countdown" id="exam-countdown">
+            距离考试还有: <span id="countdown-days" style="font-size: 18px;">--</span> 天
+        </div>
+        <div class="date-selector">
+            <label for="date">日期: </label>
+            <input type="date" id="date" name="date">
+            <button class="btn" onclick="updateDate()" style="padding: 10px 15px; margin-left: 10px;">更新</button>
+            <button class="btn btn-sync" onclick="syncData()" style="padding: 10px 15px; margin-left: 10px;">同步数据</button>
+        </div>
+    </div>
+
+    <div class="nav-tabs">
+        <div class="nav-tab active" onclick="switchTab('daily-tab')">每日任务</div>
+        <div class="nav-tab" onclick="switchTab('data-tab')">学习数据</div>
+        <div class="nav-tab" onclick="switchTab('stats-tab')">数据统计</div>
+        <div class="nav-tab" onclick="switchTab('rewards-tab')">奖励兑换</div>
+        <div class="nav-tab" onclick="switchTab('sync-tab')">同步设置</div>
+    </div>
+
+    <div id="daily-tab" class="tab-content active">
+        <div class="card progress-container">
+            <h3>今日进度 <span id="current-points">0</span>/100 分</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+                <div class="progress-text" id="progress-text">0%</div>
+            </div>
+            <p>目标: ≥80分可获得30分钟无负罪感娱乐时间</p>
+        </div>
+
+        <div class="card">
+            <h3>每日核心任务</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th width="8%">完成</th>
+                        <th width="15%">类别</th>
+                        <th width="32%">行动 (Action)</th>
+                        <th width="25%">优化与防作弊机制</th>
+                        <th width="10%">奖励</th>
+                        <th width="10%">得分</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" id="task1" onclick="updatePoints(15, this)"></td>
+                        <td class="category">词汇攻坚</td>
+                        <td>学习并掌握35个新六级词汇/短语</td>
+                        <td>必须能正确拼写、说出中文意思、并造一个正确句子。次日复习时能再次认出才算数。</td>
+                        <td class="points">+15</td>
+                        <td id="point1">0</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" id="task2" onclick="updatePoints(20, this)"></td>
+                        <td class="category">听力沉浸</td>
+                        <td>完成1篇六级听力真题并精听复盘</td>
+                        <td>听写出错题点的关键句，并跟读至语音语调基本一致。</td>
+                        <td class="points">+20</td>
+                        <td id="point2">0</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" id="task3" onclick="updatePoints(25, this)"></td>
+                        <td class="category">阅读解析</td>
+                        <td>完成2篇六级阅读真题并精读分析</td>
+                        <td>摘录2个长难句进行结构分析，并整理10个生词/短语。</td>
+                        <td class="points">+25</td>
+                        <td id="point3">0</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" id="task4" onclick="updatePoints(20, this)"></td>
+                        <td class="category">写作/翻译</td>
+                        <td>完成1篇作文或2段翻译练习</td>
+                        <td>必须使用至少5个本日或本周学习的新词汇或高级句型。</td>
+                        <td class="points">+20</td>
+                        <td id="point4">0</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" id="task5" onclick="updatePoints(20, this)"></td>
+                        <td class="category">综合投入</td>
+                        <td>每日高效学习时长 ≥ 2.5小时</td>
+                        <td>使用番茄钟记录，心不在焉的时间不计入。</td>
+                        <td class="points">+20</td>
+                        <td id="point5">0</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>外部验证任务 (每周至少完成3项)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th width="8%">完成</th>
+                        <th width="15%">类别</th>
+                        <th width="37%">行动 (Action)</th>
+                        <th width="20%">说明</th>
+                        <th width="10%">奖励</th>
+                        <th width="10%">得分</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" id="task6" onclick="updatePoints(15, this)"></td>
+                        <td class="category">AI作文评估</td>
+                        <td>使用Grammarly/ChatGPT评估一篇作文</td>
+                        <td>根据AI反馈修改并提交最终版</td>
+                        <td class="points">+15</td>
+                        <td id="point6">0</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" id="task7" onclick="updatePoints(15, this)"></td>
+                        <td class="category">口语练习</td>
+                        <td>使用英语配音APP或AI对话工具练习</td>
+                        <td>记录分数并比上周提高</td>
+                        <td class="points">+15</td>
+                        <td id="point7">0</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" id="task8" onclick="updatePoints(20, this)"></td>
+                        <td class="category">模拟测试</td>
+                        <td>完成一套完整模拟测试</td>
+                        <td>严格计时，自我评分</td>
+                        <td class="points">+20</td>
+                        <td id="point8">0</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" id="task9" onclick="updatePoints(30, this)"></td>
+                        <td class="category">外部测评</td>
+                        <td>周末模考中单项成绩比上周有提升</td>
+                        <td>需有第三方验证或通过标准测试确认</td>
+                        <td class="points">+30</td>
+                        <td id="point9">0</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="data-tab" class="tab-content">
+        <div class="card">
+            <h3>学习数据记录</h3>
+            <p>记录详细学习数据以便进行深度分析和策略优化</p>
+            
+            <div class="data-form">
+                <div class="form-group">
+                    <label for="learning-date">日期</label>
+                    <input type="date" id="learning-date">
+                </div>
+                
+                <div class="form-group">
+                    <label for="study-time">学习时间 (分钟)</label>
+                    <input type="number" id="study-time" min="0" max="240">
+                </div>
+                
+                <div class="form-group">
+                    <label for="vocab-score">词汇得分</label>
+                    <input type="number" id="vocab-score" min="0" max="15">
+                </div>
+                
+                <div class="form-group">
+                    <label for="listening-score">听力得分</label>
+                    <input type="number" id="listening-score" min="0" max="20">
+                </div>
+                
+                <div class="form-group">
+                    <label for="reading-score">阅读得分</label>
+                    <input type="number" id="reading-score" min="0" max="25">
+                </div>
+                
+                <div class="form-group">
+                    <label for="writing-score">写作/翻译得分</label>
+                    <input type="number" id="writing-score" min="0" max="20">
+                </div>
+                
+                <div class="form-group">
+                    <label for="external-score">外部验证得分</label>
+                    <input type="number" id="external-score" min="0" max="30">
+                </div>
+                
+                <div class="form-group">
+                    <label for="error-types">主要错误类型</label>
+                    <select id="error-types">
+                        <option value="">--选择主要错误--</option>
+                        <option value="vocabulary">词汇不足</option>
+                        <option value="grammar">语法错误</option>
+                        <option value="comprehension">理解偏差</option>
+                        <option value="time">时间不足</option>
+                        <option value="focus">注意力不集中</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                <button class="btn" onclick="saveLearningData()">保存学习数据</button>
+                <button class="btn btn-danger" onclick="clearForm()">清空表单</button>
+            </div>
+            
+            <div class="data-records">
+                <h3 style="margin-bottom: 15px;">学习记录列表</h3>
+                
+                <div class="search-filter">
+                    <input type="text" id="record-search" placeholder="搜索日期或错误类型..." oninput="filterRecords()">
+                    <button class="btn" onclick="showAllRecords()">显示全部</button>
+                </div>
+                
+                <div id="records-container">
+                    <!-- 学习记录将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="stats-tab" class="tab-content">
+        <div class="card">
+            <h3>学习数据统计</h3>
+            <p>基于记录的数据生成学习洞察，帮助优化学习策略</p>
+            
+            <!-- 统计数据分类标签页 -->
+            <div class="stats-tabs">
+                <div class="stats-tab active" onclick="switchStatsTab('weekly-stats')">本周统计</div>
+                <div class="stats-tab" onclick="switchStatsTab('monthly-stats')">本月统计</div>
+                <div class="stats-tab" onclick="switchStatsTab('overall-stats')">整体统计</div>
+            </div>
+            
+            <!-- 本周统计内容 -->
+            <div id="weekly-stats" class="stats-content active">
+                <div class="stats-summary">
+                    <h4>本周学习摘要</h4>
+                    <p>统计周期: <span id="weekly-period">-- 至 --</span></p>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>平均每日得分</h4>
+                        <div class="stat-value" id="weekly-avg-score">0</div>
+                        <p>目标: ≥80分</p>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h4>最强能力项</h4>
+                        <div class="stat-value" id="weekly-strongest">--</div>
+                        <p>得分最高的领域</p>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h4>最需改进项</h4>
+                        <div class="stat-value" id="weekly-weakest">--</div>
+                        <p>需要加强的领域</p>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h4>平均学习时间</h4>
+                        <div class="stat-value" id="weekly-avg-time">0</div>
+                        <p>单位: 分钟/天</p>
+                    </div>
+                </div>
+                
+                <div class="stat-chart" id="weekly-chart">
+                    <!-- 周统计图表将通过JavaScript生成 -->
+                </div>
+                
+                <div class="stats-summary">
+                    <h4>主要错误分析</h4>
+                    <p id="weekly-errors">暂无数据</p>
+                </div>
+            </div>
+            
+            <!-- 本月统计内容 -->
+            <div id="monthly-stats" class="stats-content">
+                <div class="stats-summary">
+                    <h4>本月学习摘要</h4>
+                    <p>统计周期: <span id="monthly-period">-- 至 --</span></p>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>平均每日得分</h4>
+                        <div class="stat-value" id="monthly-avg-score">0</div>
+                        <p>目标: ≥80分</p>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h4>最强能力项</h4>
+                        <div class="stat-value" id="monthly-strongest">--</div>
+                        <p>得分最高的领域</p>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h4>最需改进项</h4>
+                        <div class="stat-value" id="monthly-weakest">--</div>
+                        <p>需要加强的领域</p>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h4>平均学习时间</h4>
+                        <div class="stat-value" id="monthly-avg-time">0</div>
+                        <p>单位: 分钟/天</p>
+                    </div>
+                </div>
+                
+                <div class="stat-chart" id="monthly-chart">
+                    <!-- 月统计图表将通过JavaScript生成 -->
+                </div>
+                
+                <div class="stats-summary">
+                    <h4>主要错误分析</h4>
+                    <p id="monthly-errors">暂无数据</p>
+                </div>
+            </div>
+            
+            <!-- 整体统计内容 -->
+            <div id="overall-stats" class="stats-content">
+                <div class="stats-summary">
+                    <h4>整体学习摘要</h4>
+                    <p>统计周期: <span id="overall-period">-- 至 --</span></p>
+                    <p>总学习天数: <span id="overall-days">0</span> 天</p>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>平均每日得分</h4>
+                        <div class="stat-value" id="overall-avg-score">0</div>
+                        <p>目标: ≥80分</p>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h4>最强能力项</h4>
+                        <div class="stat-value" id="overall-strongest">--</div>
+                        <p>得分最高的领域</p>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h4>最需改进项</h4>
+                        <div class="stat-value" id="overall-weakest">--</div>
+                        <p>需要加强的领域</p>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h4>学习达成率</h4>
+                        <div class="stat-value" id="overall-achievement">0%</div>
+                        <p>达到80分的比例</p>
+                    </div>
+                </div>
+                
+                <div class="stat-chart" id="overall-chart">
+                    <!-- 整体统计图表将通过JavaScript生成 -->
+                </div>
+                
+                <div class="stats-summary">
+                    <h4>主要错误分析</h4>
+                    <p id="overall-errors">暂无数据</p>
+                </div>
+            </div>
+            
+            <button class="btn" onclick="calculateAllStats()" style="margin-top: 20px;">更新统计报告</button>
+        </div>
+    </div>
+
+    <div id="rewards-tab" class="tab-content">
+        <div class="card">
+            <h3>奖励兑换机制</h3>
+            <ul>
+                <li><strong>每日兑换</strong>: 累计得分 ≥ 80分，即可获得30分钟无负罪感的娱乐时间。</li>
+                <li><strong>每周兑换</strong>: 本周每日平均分 ≥ 85分，周末可享受一次"大餐"或"电影"。</li>
+                <li><strong>阶段兑换（每28天）</strong>: 完成阶段目标且每周均分达标，兑换一次中型奖励（如买一本喜欢的书、看一场演出）。</li>
+                <li><strong>外部验证奖励</strong>: 每周完成3项外部验证任务，额外奖励一次小型娱乐活动。</li>
+                <li><strong>终极奖励</strong>: 84天后达到650分目标，奖励自己一次梦想之旅或心仪已久的电子产品。</li>
+            </ul>
+            
+            <div style="margin-top: 20px; padding: 15px; background-color: #e8f4f8; border-radius: 8px;">
+                <h4>本周可兑换奖励</h4>
+                <p id="available-rewards">每日得分达到80分即可解锁奖励</p>
+                <button class="btn" onclick="claimReward()" style="margin-top: 10px;">领取奖励</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="sync-tab" class="tab-content">
+        <div class="card">
+            <h3>数据同步设置</h3>
+            <p>配置同步以在所有设备上保持数据一致</p>
+            
+            <div class="sync-settings">
+                <div class="form-group">
+                    <label for="user-id">用户ID</label>
+                    <input type="text" id="user-id" placeholder="输入您的唯一用户ID（跨设备使用相同ID）">
+                    <small style="color: var(--text-light);">使用相同ID在不同设备上同步数据</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="github-token">GitHub 个人访问令牌 (可选)</label>
+                    <input type="password" id="github-token" placeholder="输入您的GitHub令牌">
+                    <small style="color: var(--text-light);">需要创建带有gist权限的个人访问令牌</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="gist-id">Gist ID (可选)</label>
+                    <input type="text" id="gist-id" placeholder="输入存储数据的Gist ID">
+                    <small style="color: var(--text-light);">如果没有，点击下方按钮创建新的Gist</small>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                    <button class="btn" onclick="toggleCloudSync()">
+                        <span id="sync-toggle-text">启用云同步</span>
+                    </button>
+                    <button class="btn btn-sync" onclick="createNewGist()" style="margin-right: 10px;">创建新Gist</button>
+                    <button class="btn" onclick="saveSyncSettings()">保存设置</button>
+                </div>
+                
+                <!-- 新增：手动同步和备份功能 -->
+                <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                    <button class="btn btn-sync" onclick="manualSync()">手动同步</button>
+                    <button class="btn" onclick="exportData()">导出数据</button>
+                    <input type="file" id="import-file" accept=".json" style="display: none;" onchange="importData(event)">
+                    <button class="btn" onclick="document.getElementById('import-file').click()">导入数据</button>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <p><strong>云同步状态:</strong> <span id="cloud-sync-status">未启用</span></p>
+                    <p><strong>最后同步时间:</strong> <span id="last-sync-time">从未同步</span></p>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <h4>同步历史</h4>
+                <p id="sync-history">暂无同步记录</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Project CET-6-650 | 基于DeepSeek-R1强化学习方法论 | 第 <span id="day-counter">1</span> 天/84天</p>
+    </div>
+
+    <div class="save-indicator" id="save-indicator">数据已保存</div>
+
+    <script>
+        let totalPoints = 0;
+        let learningData = [];
+        let weeklyData = {
+            startDate: null,
+            dailyScores: []
+        };
+        let syncSettings = {
+            userId: '',
+            githubToken: '',
+            gistId: '',
+            cloudSyncEnabled: false
+        };
+        let syncHistory = [];
+        let lastSyncTime = null;
+        let currentEditingIndex = -1; // 用于跟踪当前正在编辑的记录索引
+        
+        // 为每一行添加ID以便识别
+        document.addEventListener('DOMContentLoaded', function() {
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach((row, index) => {
+                row.id = index + 1;
+            });
+            
+            // 设置默认日期为今天
+            const today = new Date();
+            document.getElementById('date').value = formatDate(today);
+            document.getElementById('learning-date').value = formatDate(today);
+            
+            // 初始化倒计时
+            updateExamCountdown();
+            // 每小时更新一次倒计时
+            setInterval(updateExamCountdown, 3600000);
+            
+            // 加载保存的数据
+            loadLocalData();
+            loadSyncSettings();
+            
+            // 检查是否需要更新每日数据
+            checkAndUpdateDailyData();
+            
+            // 显示学习记录
+            displayLearningRecords();
+            
+            // 自动计算统计数据
+            calculateAllStats();
+            
+            // 自动同步数据（如果已配置）
+            if (syncSettings.cloudSyncEnabled && syncSettings.userId) {
+                setTimeout(syncData, 3000);
+            }
+            
+            // 定时自动同步（每30分钟）
+            setInterval(() => {
+                if (syncSettings.cloudSyncEnabled && syncSettings.userId) {
+                    syncData();
+                }
+            }, 1800000);
+        });
+        
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        // 获取北京时区的当前日期
+        function getBeijingDate() {
+            const now = new Date();
+            // 北京时间是UTC+8
+            const beijingTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+            return beijingTime;
+        }
+        
+        // 更新考试倒计时
+        function updateExamCountdown() {
+            // 设置考试日期为2025年12月13日（可根据实际情况修改）
+            const examDate = new Date('2025-12-13');
+            // 使用北京时区日期计算
+            const today = getBeijingDate();
+            
+            // 计算剩余天数
+            const timeDiff = examDate.getTime() - today.getTime();
+            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+            
+            // 更新显示
+            document.getElementById('countdown-days').textContent = daysDiff > 0 ? daysDiff : 0;
+        }
+        
+        // 检查是否需要更新每日数据
+        function checkAndUpdateDailyData() {
+            const lastActivityDate = localStorage.getItem('lastActivityDate');
+            const today = formatDate(getBeijingDate());
+            
+            // 如果是新的一天，重置每日任务但保留累计数据
+            if (!lastActivityDate || lastActivityDate !== today) {
+                resetDailyTasks();
+                // 保存今天的日期作为最后活动日期
+                localStorage.setItem('lastActivityDate', today);
+                
+                // 将昨天的分数添加到周数据中
+                const savedTasks = JSON.parse(localStorage.getItem('englishLearningTasks') || '{"totalPoints":0}');
+                if (savedTasks.totalPoints > 0) {
+                    addToWeeklyData(savedTasks.totalPoints, lastActivityDate || today);
+                }
+            }
+        }
+        
+        // 重置每日任务
+        function resetDailyTasks() {
+            // 重置任务状态
+            for (let i = 1; i <= 9; i++) {
+                const checkbox = document.getElementById(`task${i}`);
+                const pointElement = document.getElementById(`point${i}`);
+                if (checkbox) {
+                    checkbox.checked = false;
+                    pointElement.textContent = '0';
+                }
+            }
+            
+            // 重置总分
+            totalPoints = 0;
+            document.getElementById('current-points').textContent = totalPoints;
+            document.getElementById('progress-fill').style.width = '0%';
+            document.getElementById('progress-text').textContent = '0%';
+            
+            // 更新可兑换奖励显示
+            updateAvailableRewards();
+            
+            // 保存重置后的数据
+            saveLocalData();
+        }
+        
+        // 添加到周数据统计
+        function addToWeeklyData(score, date) {
+            // 加载周数据
+            const savedWeeklyData = localStorage.getItem('weeklyLearningData');
+            if (savedWeeklyData) {
+                weeklyData = JSON.parse(savedWeeklyData);
+            }
+            
+            // 如果是新的一周，重置周数据
+            const today = getBeijingDate();
+            const weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1)); // 周一为一周的开始
+            
+            if (!weeklyData.startDate || new Date(weeklyData.startDate) < weekStart) {
+                weeklyData = {
+                    startDate: formatDate(weekStart),
+                    dailyScores: []
+                };
+            }
+            
+            // 添加今日分数
+            weeklyData.dailyScores.push({
+                date: date,
+                score: score
+            });
+            
+            // 保存周数据
+            localStorage.setItem('weeklyLearningData', JSON.stringify(weeklyData));
+        }
+        
+        // 加载本地保存的数据
+        function loadLocalData() {
+            // 加载周数据
+            const savedWeeklyData = localStorage.getItem('weeklyLearningData');
+            if (savedWeeklyData) {
+                weeklyData = JSON.parse(savedWeeklyData);
+            }
+            
+            // 加载任务状态
+            const savedTasks = localStorage.getItem('englishLearningTasks');
+            if (savedTasks) {
+                const tasks = JSON.parse(savedTasks);
+                totalPoints = tasks.totalPoints || 0;
+                
+                // 更新UI
+                document.getElementById('current-points').textContent = totalPoints;
+                const percentage = totalPoints;
+                document.getElementById('progress-fill').style.width = `${percentage}%`;
+                document.getElementById('progress-text').textContent = `${percentage}%`;
+                
+                // 设置复选框状态
+                for (let i = 1; i <= 9; i++) {
+                    const checkbox = document.getElementById(`task${i}`);
+                    const pointElement = document.getElementById(`point${i}`);
+                    if (checkbox && tasks[`task${i}`]) {
+                        checkbox.checked = true;
+                        pointElement.textContent = tasks[`task${i}`].points;
+                    }
+                }
+                
+                updateAvailableRewards();
+            }
+            
+            // 加载学习数据
+            const savedLearningData = localStorage.getItem('englishLearningData');
+            if (savedLearningData) {
+                learningData = JSON.parse(savedLearningData);
+            }
+            
+            // 加载同步历史
+            const savedSyncHistory = localStorage.getItem('syncHistory');
+            if (savedSyncHistory) {
+                syncHistory = JSON.parse(savedSyncHistory);
+                updateSyncHistoryDisplay();
+            }
+            
+            // 更新天数计数器
+            const startDate = new Date('2023-09-01');
+            const today = getBeijingDate();
+            const diffTime = Math.abs(today - startDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            document.getElementById('day-counter').textContent = Math.min(diffDays, 84);
+        }
+        
+        // 保存数据到本地存储
+        function saveLocalData() {
+            // 保存任务状态
+            const tasksToSave = {
+                totalPoints: totalPoints
+            };
+            
+            for (let i = 1; i <= 9; i++) {
+                const checkbox = document.getElementById(`task${i}`);
+                const pointElement = document.getElementById(`point${i}`);
+                if (checkbox && checkbox.checked) {
+                    tasksToSave[`task${i}`] = {
+                        checked: true,
+                        points: parseInt(pointElement.textContent)
+                    };
+                }
+            }
+            
+            localStorage.setItem('englishLearningTasks', JSON.stringify(tasksToSave));
+            
+            // 保存学习数据
+            localStorage.setItem('englishLearningData', JSON.stringify(learningData));
+            
+            // 保存最后活动日期
+            localStorage.setItem('lastActivityDate', formatDate(getBeijingDate()));
+            
+            // 显示保存提示
+            const indicator = document.getElementById('save-indicator');
+            indicator.style.opacity = '1';
+            setTimeout(() => {
+                indicator.style.opacity = '0';
+            }, 2000);
+            
+            // 数据变化后自动更新统计
+            calculateAllStats();
+            
+            // 自动同步（如果已配置且数据有变化）
+            if (syncSettings.cloudSyncEnabled && syncSettings.userId && 
+                (lastSyncTime === null || new Date() - lastSyncTime > 300000)) { // 5分钟内不重复同步
+                syncData();
+            }
+        }
+        
+        // 同步设置相关函数
+        function loadSyncSettings() {
+            const savedSettings = localStorage.getItem('syncSettings');
+            if (savedSettings) {
+                syncSettings = JSON.parse(savedSettings);
+                document.getElementById('user-id').value = syncSettings.userId || '';
+                document.getElementById('github-token').value = syncSettings.githubToken || '';
+                document.getElementById('gist-id').value = syncSettings.gistId || '';
+                
+                // 更新同步状态显示
+                updateSyncStatusDisplay();
+            }
+            
+            // 加载最后同步时间
+            const savedLastSync = localStorage.getItem('lastSyncTime');
+            if (savedLastSync) {
+                lastSyncTime = new Date(savedLastSync);
+                document.getElementById('last-sync-time').textContent = lastSyncTime.toLocaleString();
+            }
+        }
+        
+        function saveSyncSettings() {
+            syncSettings.userId = document.getElementById('user-id').value;
+            syncSettings.githubToken = document.getElementById('github-token').value;
+            syncSettings.gistId = document.getElementById('gist-id').value;
+            
+            localStorage.setItem('syncSettings', JSON.stringify(syncSettings));
+            
+            // 更新同步状态显示
+            updateSyncStatusDisplay();
+            
+            addSyncHistory('同步设置已保存');
+            showSyncStatus('设置已保存');
+        }
+        
+        function toggleCloudSync() {
+            const userId = document.getElementById('user-id').value;
+            if (!userId && !syncSettings.cloudSyncEnabled) {
+                alert('请先输入用户ID');
+                document.getElementById('user-id').focus();
+                return;
+            }
+            
+            syncSettings.cloudSyncEnabled = !syncSettings.cloudSyncEnabled;
+            saveSyncSettings();
+            
+            if (syncSettings.cloudSyncEnabled) {
+                addSyncHistory('云同步已启用');
+                showSyncStatus('云同步已启用');
+                // 立即同步一次
+                syncData();
+            } else {
+                addSyncHistory('云同步已禁用');
+                showSyncStatus('云同步已禁用');
+            }
+        }
+        
+        function updateSyncStatusDisplay() {
+            document.getElementById('cloud-sync-status').textContent = 
+                syncSettings.cloudSyncEnabled ? '已启用' : '未启用';
+            
+            document.getElementById('sync-toggle-text').textContent = 
+                syncSettings.cloudSyncEnabled ? '禁用云同步' : '启用云同步';
+        }
+        
+        function createNewGist() {
+            if (!syncSettings.githubToken) {
+                alert('请先输入GitHub个人访问令牌');
+                return;
+            }
+            
+            showSyncingStatus();
+            
+            const fileContent = JSON.stringify({
+                lastUpdated: new Date().toISOString(),
+                userId: syncSettings.userId,
+                tasks: JSON.parse(localStorage.getItem('englishLearningTasks') || '{"totalPoints":0}'),
+                learningData: learningData,
+                weeklyData: weeklyData
+            }, null, 2);
+            
+            fetch('https://api.github.com/gists', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `token ${syncSettings.githubToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    description: '英语学习系统数据存储',
+                    public: false,
+                    files: {
+                        'english_learning_data.json': {
+                            content: fileContent
+                        }
+                    }
+                })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('创建Gist失败');
+                return response.json();
+            })
+            .then(data => {
+                syncSettings.gistId = data.id;
+                document.getElementById('gist-id').value = data.id;
+                saveSyncSettings();
+                addSyncHistory('已创建新Gist并同步数据');
+                showSyncStatus('Gist创建成功');
+            })
+            .catch(error => {
+                console.error('创建Gist错误:', error);
+                showSyncStatus('创建失败: ' + error.message);
+                addSyncHistory('创建Gist失败: ' + error.message);
+            });
+        }
+        
+        // 手动同步功能
+        function manualSync() {
+            if (!syncSettings.cloudSyncEnabled) {
+                alert('请先启用云同步');
+                return;
+            }
+            
+            if (!syncSettings.userId) {
+                alert('请先设置用户ID');
+                document.getElementById('user-id').focus();
+                return;
+            }
+            
+            syncData();
+        }
+        
+        // 导出数据功能
+        function exportData() {
+            const exportData = {
+                lastUpdated: new Date().toISOString(),
+                userId: syncSettings.userId,
+                tasks: JSON.parse(localStorage.getItem('englishLearningTasks') || '{"totalPoints":0}'),
+                learningData: learningData,
+                weeklyData: weeklyData
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `english_learning_data_${formatDate(new Date())}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            addSyncHistory('数据已导出');
+            showSyncStatus('数据导出成功');
+        }
+        
+        // 导入数据功能
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    if (confirm('确定要导入数据吗？这将覆盖当前数据。')) {
+                        // 更新本地存储
+                        if (importedData.tasks) {
+                            localStorage.setItem('englishLearningTasks', JSON.stringify(importedData.tasks));
+                        }
+                        if (importedData.learningData) {
+                            learningData = importedData.learningData;
+                            localStorage.setItem('englishLearningData', JSON.stringify(learningData));
+                        }
+                        if (importedData.weeklyData) {
+                            weeklyData = importedData.weeklyData;
+                            localStorage.setItem('weeklyLearningData', JSON.stringify(weeklyData));
+                        }
+                        
+                        // 如果导入数据包含用户ID，更新当前用户ID
+                        if (importedData.userId) {
+                            syncSettings.userId = importedData.userId;
+                            document.getElementById('user-id').value = importedData.userId;
+                            saveSyncSettings();
+                        }
+                        
+                        // 重新加载数据并更新UI
+                        loadLocalData();
+                        displayLearningRecords();
+                        calculateAllStats();
+                        
+                        addSyncHistory('数据已导入');
+                        showSyncStatus('数据导入成功');
+                    }
+                } catch (error) {
+                    console.error('导入数据错误:', error);
+                    alert('导入失败: 无效的JSON文件');
+                    addSyncHistory('数据导入失败: 无效文件');
+                }
+            };
+            reader.readAsText(file);
+            
+            // 重置文件输入，允许重复选择同一个文件
+            document.getElementById('import-file').value = '';
+        }
+        
+        // 数据同步相关函数
+        function syncData() {
+            if (!syncSettings.cloudSyncEnabled) {
+                alert('请先启用云同步');
+                return;
+            }
+            
+            if (!syncSettings.userId) {
+                alert('请先设置用户ID');
+                document.getElementById('user-id').focus();
+                return;
+            }
+            
+            showSyncingStatus();
+            
+            // 检查是否使用GitHub Gist同步
+            if (syncSettings.githubToken && syncSettings.gistId) {
+                syncWithGitHub();
+            } else {
+                // 使用localStorage模拟云同步
+                syncWithLocalStorage();
+            }
+        }
+        
+        // 使用GitHub同步
+        function syncWithGitHub() {
+            // 先获取远程数据
+            fetch(`https://api.github.com/gists/${syncSettings.gistId}`, {
+                headers: {
+                    'Authorization': `token ${syncSettings.githubToken}`
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        // Gist不存在，创建新的
+                        return createNewGist().then(() => null);
+                    }
+                    throw new Error('获取远程数据失败');
+                }
+                return response.json();
+            })
+            .then(remoteGist => {
+                if (!remoteGist) return; // 如果是新建的Gist，直接返回
+                
+                const remoteData = JSON.parse(
+                    remoteGist.files['english_learning_data.json'].content
+                );
+                
+                // 验证用户ID匹配
+                if (remoteData.userId && remoteData.userId !== syncSettings.userId) {
+                    throw new Error('用户ID不匹配，无法同步');
+                }
+                
+                const localLastUpdated = localStorage.getItem('lastSyncTime') || new Date(0).toISOString();
+                
+                // 比较远程和本地数据的更新时间
+                if (new Date(remoteData.lastUpdated) > new Date(localLastUpdated)) {
+                    // 远程数据更新，使用远程数据
+                    return new Promise((resolve) => {
+                        if (confirm('发现更新的数据，是否同步到本地？')) {
+                            localStorage.setItem('englishLearningTasks', JSON.stringify(remoteData.tasks));
+                            learningData = remoteData.learningData;
+                            weeklyData = remoteData.weeklyData;
+                            localStorage.setItem('englishLearningData', JSON.stringify(learningData));
+                            localStorage.setItem('weeklyLearningData', JSON.stringify(weeklyData));
+                            
+                            loadLocalData(); // 重新加载数据更新UI
+                            displayLearningRecords(); // 更新学习记录显示
+                            calculateAllStats(); // 更新统计数据
+                            addSyncHistory('已从远程同步最新数据');
+                            resolve(true);
+                        } else {
+                            resolve(false);
+                        }
+                    });
+                } else {
+                    // 本地数据更新，上传到远程
+                    return false;
+                }
+            })
+            .then(remoteWasNewer => {
+                if (remoteWasNewer === null) return; // 新建Gist的情况
+                
+                if (!remoteWasNewer) {
+                    // 上传本地数据到远程
+                    const fileContent = JSON.stringify({
+                        lastUpdated: new Date().toISOString(),
+                        userId: syncSettings.userId,
+                        tasks: JSON.parse(localStorage.getItem('englishLearningTasks') || '{"totalPoints":0}'),
+                        learningData: learningData,
+                        weeklyData: weeklyData
+                    }, null, 2);
+                    
+                    return fetch(`https://api.github.com/gists/${syncSettings.gistId}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `token ${syncSettings.githubToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            files: {
+                                'english_learning_data.json': {
+                                    content: fileContent
+                                }
+                            }
+                        })
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error('上传数据失败');
+                        localStorage.setItem('lastSyncTime', new Date().toISOString());
+                        lastSyncTime = new Date();
+                        document.getElementById('last-sync-time').textContent = lastSyncTime.toLocaleString();
+                        addSyncHistory('已将本地数据同步到远程');
+                        return true;
+                    });
+                }
+                return true;
+            })
+            .then(success => {
+                if (success) {
+                    showSyncStatus('同步成功');
+                }
+            })
+            .catch(error => {
+                console.error('同步错误:', error);
+                showSyncStatus('同步失败: ' + error.message);
+                addSyncHistory('同步失败: ' + error.message);
+            });
+        }
+        
+        // 使用localStorage模拟云同步
+        function syncWithLocalStorage() {
+            try {
+                // 存储键包含用户ID，实现多用户隔离
+                const storageKey = `cloud_sync_${syncSettings.userId}`;
+                
+                // 获取远程数据（实际是localStorage中的数据）
+                const remoteDataStr = localStorage.getItem(storageKey);
+                const localLastUpdated = localStorage.getItem('lastSyncTime') || new Date(0).toISOString();
+                
+                if (remoteDataStr) {
+                    const remoteData = JSON.parse(remoteDataStr);
+                    
+                    // 比较远程和本地数据的更新时间
+                    if (new Date(remoteData.lastUpdated) > new Date(localLastUpdated)) {
+                        // 远程数据更新，使用远程数据
+                        if (confirm('发现更新的数据，是否同步到本地？')) {
+                            localStorage.setItem('englishLearningTasks', JSON.stringify(remoteData.tasks));
+                            learningData = remoteData.learningData;
+                            weeklyData = remoteData.weeklyData;
+                            localStorage.setItem('englishLearningData', JSON.stringify(learningData));
+                            localStorage.setItem('weeklyLearningData', JSON.stringify(weeklyData));
+                            
+                            loadLocalData(); // 重新加载数据更新UI
+                            displayLearningRecords(); // 更新学习记录显示
+                            calculateAllStats(); // 更新统计数据
+                            addSyncHistory('已从云同步最新数据');
+                        }
+                    }
+                }
+                
+                // 上传本地数据到"云端"（实际是localStorage）
+                const localData = {
+                    lastUpdated: new Date().toISOString(),
+                    userId: syncSettings.userId,
+                    tasks: JSON.parse(localStorage.getItem('englishLearningTasks') || '{"totalPoints":0}'),
+                    learningData: learningData,
+                    weeklyData: weeklyData
+                };
+                
+                localStorage.setItem(storageKey, JSON.stringify(localData));
+                localStorage.setItem('lastSyncTime', new Date().toISOString());
+                lastSyncTime = new Date();
+                document.getElementById('last-sync-time').textContent = lastSyncTime.toLocaleString();
+                
+                addSyncHistory('本地数据已同步到云端');
+                showSyncStatus('同步成功');
+            } catch (error) {
+                console.error('同步错误:', error);
+                showSyncStatus('同步失败: ' + error.message);
+                addSyncHistory('同步失败: ' + error.message);
+            }
+        }
+        
+        function addSyncHistory(message) {
+            const now = new Date();
+            const timeString = now.toLocaleString();
+            syncHistory.unshift({
+                time: timeString,
+                message: message
+            });
+            
+            // 只保留最近10条记录
+            if (syncHistory.length > 10) {
+                syncHistory = syncHistory.slice(0, 10);
+            }
+            
+            localStorage.setItem('syncHistory', JSON.stringify(syncHistory));
+            updateSyncHistoryDisplay();
+        }
+        
+        function updateSyncHistoryDisplay() {
+            const historyElement = document.getElementById('sync-history');
+            if (syncHistory.length === 0) {
+                historyElement.textContent = '暂无同步记录';
+                return;
+            }
+            
+            let html = '<ul style="padding-left: 20px;">';
+            syncHistory.forEach(item => {
+                html += `<li><strong>${item.time}</strong>: ${item.message}</li>`;
+            });
+            html += '</ul>';
+            historyElement.innerHTML = html;
+        }
+        
+        function showSyncingStatus() {
+            document.getElementById('sync-status-text').textContent = '同步中...';
+            document.querySelector('.sync-icon').style.display = 'inline';
+        }
+        
+        function showSyncStatus(message) {
+            document.getElementById('sync-status-text').textContent = message;
+            document.querySelector('.sync-icon').style.display = 'none';
+        }
+        
+        // 原有功能函数
+        function switchTab(tabId) {
+            // 隐藏所有标签内容
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 取消所有标签的活动状态
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示选中的标签内容
+            document.getElementById(tabId).classList.add('active');
+            
+            // 设置选中的标签为活动状态
+            document.querySelector(`.nav-tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
+            
+            // 保存数据
+            saveLocalData();
+        }
+        
+        // 切换统计标签页
+        function switchStatsTab(tabId) {
+            // 隐藏所有统计内容
+            document.querySelectorAll('.stats-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 取消所有统计标签的活动状态
+            document.querySelectorAll('.stats-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示选中的统计内容
+            document.getElementById(tabId).classList.add('active');
+            
+            // 设置选中的统计标签为活动状态
+            document.querySelector(`.stats-tab[onclick="switchStatsTab('${tabId}')"]`).classList.add('active');
+        }
+        
+        function updatePoints(points, checkbox) {
+            const row = checkbox.closest('tr');
+            const pointId = row.id;
+            const pointElement = document.getElementById(`point${pointId}`);
+            
+            if (checkbox.checked) {
+                totalPoints += points;
+                pointElement.textContent = points;
+            } else {
+                totalPoints -= points;
+                pointElement.textContent = '0';
+            }
+            
+            document.getElementById('current-points').textContent = totalPoints;
+            const percentage = totalPoints;
+            document.getElementById('progress-fill').style.width = `${percentage}%`;
+            document.getElementById('progress-text').textContent = `${percentage}%`;
+            
+            // 更新可兑换奖励显示
+            updateAvailableRewards();
+            
+            // 保存数据
+            saveLocalData();
+        }
+        
+        function updateDate() {
+            const dateInput = document.getElementById('date');
+            const selectedDate = new Date(dateInput.value);
+            const startDate = new Date('2023-09-01'); // 计划开始日期
+            const diffTime = Math.abs(selectedDate - startDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            
+            if (diffDays >= 1 && diffDays <= 84) {
+                document.getElementById('day-counter').textContent = diffDays;
+            } else {
+                alert('请输入84天计划内的有效日期');
+            }
+            
+            // 保存数据
+            saveLocalData();
+        }
+        
+        // 学习数据管理功能
+        function saveLearningData() {
+            const date = document.getElementById('learning-date').value;
+            if (!date) {
+                alert('请选择日期');
+                return;
+            }
+            
+            const data = {
+                date: date,
+                studyTime: document.getElementById('study-time').value,
+                vocabScore: document.getElementById('vocab-score').value,
+                listeningScore: document.getElementById('listening-score').value,
+                readingScore: document.getElementById('reading-score').value,
+                writingScore: document.getElementById('writing-score').value,
+                externalScore: document.getElementById('external-score').value,
+                errorType: document.getElementById('error-types').value
+            };
+            
+            // 计算总分
+            const total = parseInt(data.vocabScore || 0) + 
+                          parseInt(data.listeningScore || 0) + 
+                          parseInt(data.readingScore || 0) + 
+                          parseInt(data.writingScore || 0) + 
+                          parseInt(data.externalScore || 0);
+            
+            // 检查是否是编辑模式
+            if (currentEditingIndex !== -1) {
+                // 更新现有记录
+                learningData[currentEditingIndex] = data;
+                alert(`学习数据已更新！总分: ${total}`);
+                currentEditingIndex = -1; // 重置编辑状态
+            } else {
+                // 检查是否已有该日期的数据
+                const existingIndex = learningData.findIndex(item => item.date === data.date);
+                if (existingIndex >= 0) {
+                    if (confirm('该日期已有数据，是否覆盖？')) {
+                        learningData[existingIndex] = data;
+                        alert(`学习数据已更新！总分: ${total}`);
+                    } else {
+                        return;
+                    }
+                } else {
+                    // 添加新记录
+                    learningData.push(data);
+                    alert(`学习数据已保存！总分: ${total}，已保存${learningData.length}条记录`);
+                }
+            }
+            
+            // 清空表单
+            clearForm();
+            
+            // 保存数据并更新显示
+            saveLocalData();
+            displayLearningRecords();
+        }
+        
+        function clearForm() {
+            document.getElementById('study-time').value = '';
+            document.getElementById('vocab-score').value = '';
+            document.getElementById('listening-score').value = '';
+            document.getElementById('reading-score').value = '';
+            document.getElementById('writing-score').value = '';
+            document.getElementById('external-score').value = '';
+            document.getElementById('error-types').value = '';
+            currentEditingIndex = -1; // 重置编辑状态
+        }
+        
+        function displayLearningRecords() {
+            const container = document.getElementById('records-container');
+            
+            if (learningData.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div>📊</div>
+                        <h3>暂无学习记录</h3>
+                        <p>请在上方表单中添加您的第一条学习记录</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 按日期降序排序
+            const sortedData = [...learningData].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>学习时间(分钟)</th>
+                            <th>总分</th>
+                            <th>主要错误</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            sortedData.forEach((data, index) => {
+                const totalScore = parseInt(data.vocabScore || 0) + 
+                                  parseInt(data.listeningScore || 0) + 
+                                  parseInt(data.readingScore || 0) + 
+                                  parseInt(data.writingScore || 0) + 
+                                  parseInt(data.externalScore || 0);
+                
+                // 转换错误类型为中文显示
+                let errorTypeText = "无";
+                switch(data.errorType) {
+                    case "vocabulary": errorTypeText = "词汇不足"; break;
+                    case "grammar": errorTypeText = "语法错误"; break;
+                    case "comprehension": errorTypeText = "理解偏差"; break;
+                    case "time": errorTypeText = "时间不足"; break;
+                    case "focus": errorTypeText = "注意力不集中"; break;
+                }
+                
+                html += `
+                    <tr>
+                        <td>${data.date}</td>
+                        <td>${data.studyTime || 0}</td>
+                        <td class="points">${totalScore}</td>
+                        <td>${errorTypeText}</td>
+                        <td class="record-actions">
+                            <button class="btn btn-small" onclick="editRecord(${index})">编辑</button>
+                            <button class="btn btn-small btn-danger" onclick="deleteRecord(${index})">删除</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+                <p style="margin-top: 15px; color: var(--text-light);">共 ${learningData.length} 条记录</p>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        function editRecord(index) {
+            const data = learningData[index];
+            currentEditingIndex = index;
+            
+            // 填充表单
+            document.getElementById('learning-date').value = data.date;
+            document.getElementById('study-time').value = data.studyTime || '';
+            document.getElementById('vocab-score').value = data.vocabScore || '';
+            document.getElementById('listening-score').value = data.listeningScore || '';
+            document.getElementById('reading-score').value = data.readingScore || '';
+            document.getElementById('writing-score').value = data.writingScore || '';
+            document.getElementById('external-score').value = data.externalScore || '';
+            document.getElementById('error-types').value = data.errorType || '';
+            
+            // 滚动到表单顶部
+            document.querySelector('.data-form').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function deleteRecord(index) {
+            if (confirm(`确定要删除 ${learningData[index].date} 的记录吗？`)) {
+                learningData.splice(index, 1);
+                saveLocalData();
+                displayLearningRecords();
+                alert('记录已删除');
+            }
+        }
+        
+        function filterRecords() {
+            const searchTerm = document.getElementById('record-search').value.toLowerCase();
+            
+            if (!searchTerm) {
+                displayLearningRecords();
+                return;
+            }
+            
+            const filteredData = learningData.filter(data => {
+                // 转换错误类型为中文以便搜索
+                let errorTypeText = "";
+                switch(data.errorType) {
+                    case "vocabulary": errorTypeText = "词汇不足"; break;
+                    case "grammar": errorTypeText = "语法错误"; break;
+                    case "comprehension": errorTypeText = "理解偏差"; break;
+                    case "time": errorTypeText = "时间不足"; break;
+                    case "focus": errorTypeText = "注意力不集中"; break;
+                }
+                
+                return data.date.toLowerCase().includes(searchTerm) || 
+                       errorTypeText.toLowerCase().includes(searchTerm);
+            });
+            
+            const container = document.getElementById('records-container');
+            
+            if (filteredData.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div>🔍</div>
+                        <h3>未找到匹配记录</h3>
+                        <p>请尝试其他搜索关键词</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>学习时间(分钟)</th>
+                            <th>总分</th>
+                            <th>主要错误</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            filteredData.forEach((data, index) => {
+                // 找到原始索引
+                const originalIndex = learningData.findIndex(item => item.date === data.date);
+                if (originalIndex === -1) return;
+                
+                const totalScore = parseInt(data.vocabScore || 0) + 
+                                  parseInt(data.listeningScore || 0) + 
+                                  parseInt(data.readingScore || 0) + 
+                                  parseInt(data.writingScore || 0) + 
+                                  parseInt(data.externalScore || 0);
+                
+                // 转换错误类型为中文显示
+                let errorTypeText = "无";
+                switch(data.errorType) {
+                    case "vocabulary": errorTypeText = "词汇不足"; break;
+                    case "grammar": errorTypeText = "语法错误"; break;
+                    case "comprehension": errorTypeText = "理解偏差"; break;
+                    case "time": errorTypeText = "时间不足"; break;
+                    case "focus": errorTypeText = "注意力不集中"; break;
+                }
+                
+                html += `
+                    <tr>
+                        <td>${data.date}</td>
+                        <td>${data.studyTime || 0}</td>
+                        <td class="points">${totalScore}</td>
+                        <td>${errorTypeText}</td>
+                        <td class="record-actions">
+                            <button class="btn btn-small" onclick="editRecord(${originalIndex})">编辑</button>
+                            <button class="btn btn-small btn-danger" onclick="deleteRecord(${originalIndex})">删除</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+                <p style="margin-top: 15px; color: var(--text-light);">找到 ${filteredData.length} 条匹配记录</p>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        function showAllRecords() {
+            document.getElementById('record-search').value = '';
+            displayLearningRecords();
+        }
+        
+        // 计算所有统计数据
+        function calculateAllStats() {
+            if (learningData.length === 0) {
+                clearAllStats();
+                return;
+            }
+            
+            // 获取当前日期
+            const today = getBeijingDate();
+            
+            // 计算本周数据
+            const weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1)); // 周一
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6); // 周日
+            
+            const weeklyData = learningData.filter(item => {
+                const itemDate = new Date(item.date);
+                return itemDate >= weekStart && itemDate <= weekEnd;
+            });
+            
+            calculatePeriodStats(weeklyData, 'weekly', formatDate(weekStart), formatDate(weekEnd));
+            
+            // 计算本月数据
+            const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+            const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            
+            const monthlyData = learningData.filter(item => {
+                const itemDate = new Date(item.date);
+                return itemDate >= monthStart && itemDate <= monthEnd;
+            });
+            
+            calculatePeriodStats(monthlyData, 'monthly', formatDate(monthStart), formatDate(monthEnd));
+            
+            // 计算整体数据
+            if (learningData.length > 0) {
+                const firstDate = new Date(learningData.reduce((a, b) => new Date(a.date) < new Date(b.date) ? a : b).date);
+                const lastDate = new Date(learningData.reduce((a, b) => new Date(a.date) > new Date(b.date) ? a : b).date);
+                
+                calculatePeriodStats(learningData, 'overall', formatDate(firstDate), formatDate(lastDate));
+                
+                // 整体统计特有数据
+                document.getElementById('overall-days').textContent = learningData.length;
+                
+                // 计算达成率（达到80分的比例）
+                const targetDays = learningData.filter(data => {
+                    const dailyScore = parseInt(data.vocabScore || 0) + 
+                                      parseInt(data.listeningScore || 0) + 
+                                      parseInt(data.readingScore || 0) + 
+                                      parseInt(data.writingScore || 0) + 
+                                      parseInt(data.externalScore || 0);
+                    return dailyScore >= 80;
+                }).length;
+                
+                const achievement = Math.round((targetDays / learningData.length) * 100);
+                document.getElementById('overall-achievement').textContent = achievement + '%';
+            }
+        }
+        
+        // 清除所有统计数据
+        function clearAllStats() {
+            ['weekly', 'monthly', 'overall'].forEach(period => {
+                document.getElementById(`${period}-avg-score`).textContent = '0';
+                document.getElementById(`${period}-strongest`).textContent = '--';
+                document.getElementById(`${period}-weakest`).textContent = '--';
+                document.getElementById(`${period}-avg-time`).textContent = '0';
+                document.getElementById(`${period}-period`).textContent = '-- 至 --';
+                document.getElementById(`${period}-errors`).textContent = '暂无数据';
+                document.getElementById(`${period}-chart`).innerHTML = '<div>暂无数据</div>';
+            });
+            document.getElementById('overall-days').textContent = '0';
+            document.getElementById('overall-achievement').textContent = '0%';
+        }
+        
+        // 计算指定时间段的统计数据
+        function calculatePeriodStats(data, prefix, startDate, endDate) {
+            if (data.length === 0) {
+                document.getElementById(`${prefix}-avg-score`).textContent = '0';
+                document.getElementById(`${prefix}-strongest`).textContent = '--';
+                document.getElementById(`${prefix}-weakest`).textContent = '--';
+                document.getElementById(`${prefix}-avg-time`).textContent = '0';
+                document.getElementById(`${prefix}-period`).textContent = `${startDate} 至 ${endDate}`;
+                document.getElementById(`${prefix}-errors`).textContent = '暂无数据';
+                document.getElementById(`${prefix}-chart`).innerHTML = '<div>暂无数据</div>';
+                return;
+            }
+            
+            // 设置时间段
+            document.getElementById(`${prefix}-period`).textContent = `${startDate} 至 ${endDate}`;
+            
+            // 计算平均分
+            let totalScore = 0;
+            data.forEach(item => {
+                const dailyScore = parseInt(item.vocabScore || 0) + 
+                                  parseInt(item.listeningScore || 0) + 
+                                  parseInt(item.readingScore || 0) + 
+                                  parseInt(item.writingScore || 0) + 
+                                  parseInt(item.externalScore || 0);
+                totalScore += dailyScore;
+            });
+            
+            const avgScore = Math.round(totalScore / data.length);
+            document.getElementById(`${prefix}-avg-score`).textContent = avgScore;
+            
+            // 计算各技能平均分以确定最强和最弱项
+            let vocabTotal = 0, listeningTotal = 0, readingTotal = 0, writingTotal = 0, externalTotal = 0;
+            let studyTimeTotal = 0;
+            const errorTypes = {};
+            
+            data.forEach(item => {
+                vocabTotal += parseInt(item.vocabScore || 0);
+                listeningTotal += parseInt(item.listeningScore || 0);
+                readingTotal += parseInt(item.readingScore || 0);
+                writingTotal += parseInt(item.writingScore || 0);
+                externalTotal += parseInt(item.externalScore || 0);
+                studyTimeTotal += parseInt(item.studyTime || 0);
+                
+                // 统计错误类型
+                if (item.errorType) {
+                    errorTypes[item.errorType] = (errorTypes[item.errorType] || 0) + 1;
+                }
+            });
+            
+            const count = data.length;
+            const avgVocab = Math.round(vocabTotal / count);
+            const avgListening = Math.round(listeningTotal / count);
+            const avgReading = Math.round(readingTotal / count);
+            const avgWriting = Math.round(writingTotal / count);
+            
+            const skills = [
+                { name: "词汇", score: avgVocab },
+                { name: "听力", score: avgListening },
+                { name: "阅读", score: avgReading },
+                { name: "写作", score: avgWriting }
+            ];
+            
+            // 排序找出最强和最弱项
+            skills.sort((a, b) => b.score - a.score);
+            document.getElementById(`${prefix}-strongest`).textContent = `${skills[0].name} (${skills[0].score})`;
+            document.getElementById(`${prefix}-weakest`).textContent = `${skills[skills.length - 1].name} (${skills[skills.length - 1].score})`;
+            
+            // 平均学习时间
+            const avgStudyTime = Math.round(studyTimeTotal / count);
+            document.getElementById(`${prefix}-avg-time`).textContent = avgStudyTime;
+            
+            // 错误类型分析
+            if (Object.keys(errorTypes).length > 0) {
+                let errorText = "";
+                const sortedErrors = Object.entries(errorTypes).sort((a, b) => b[1] - a[1]);
+                
+                sortedErrors.forEach(([type, count], index) => {
+                    let typeText = "";
+                    switch(type) {
+                        case "vocabulary": typeText = "词汇不足"; break;
+                        case "grammar": typeText = "语法错误"; break;
+                        case "comprehension": typeText = "理解偏差"; break;
+                        case "time": typeText = "时间不足"; break;
+                        case "focus": typeText = "注意力不集中"; break;
+                    }
+                    
+                    errorText += `${typeText}: ${count}次`;
+                    if (index < sortedErrors.length - 1) errorText += "，";
+                });
+                
+                document.getElementById(`${prefix}-errors`).textContent = errorText;
+            } else {
+                document.getElementById(`${prefix}-errors`).textContent = "未记录错误类型";
+            }
+            
+            // 生成图表
+            generateScoreChart(data, `${prefix}-chart`);
+        }
+        
+        // 生成分数图表
+        function generateScoreChart(data, chartId) {
+            const chartContainer = document.getElementById(chartId);
+            chartContainer.innerHTML = '';
+            
+            // 按日期排序
+            const sortedData = [...data].sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // 计算最高分用于比例缩放
+            let maxScore = 0;
+            sortedData.forEach(item => {
+                const score = parseInt(item.vocabScore || 0) + 
+                             parseInt(item.listeningScore || 0) + 
+                             parseInt(item.readingScore || 0) + 
+                             parseInt(item.writingScore || 0) + 
+                             parseInt(item.externalScore || 0);
+                if (score > maxScore) maxScore = score;
+            });
+            
+            // 确保有一个合理的最大值
+            maxScore = Math.max(maxScore, 100);
+            
+            // 创建柱状图
+            sortedData.forEach(item => {
+                const score = parseInt(item.vocabScore || 0) + 
+                             parseInt(item.listeningScore || 0) + 
+                             parseInt(item.readingScore || 0) + 
+                             parseInt(item.writingScore || 0) + 
+                             parseInt(item.externalScore || 0);
+                
+                // 计算高度比例 (最高分为100%高度)
+                const height = (score / maxScore) * 100;
+                
+                const bar = document.createElement('div');
+                bar.className = 'chart-bar';
+                bar.style.height = `${height}%`;
+                bar.style.bottom = '0';
+                
+                // 添加分数标签
+                const scoreLabel = document.createElement('div');
+                scoreLabel.style.position = 'absolute';
+                scoreLabel.style.top = '-20px';
+                scoreLabel.style.left = '50%';
+                scoreLabel.style.transform = 'translateX(-50%)';
+                scoreLabel.style.fontSize = '12px';
+                scoreLabel.textContent = score;
+                bar.appendChild(scoreLabel);
+                
+                // 添加日期标签
+                const dateLabel = document.createElement('div');
+                dateLabel.className = 'chart-label';
+                // 只显示月/日
+                const date = new Date(item.date);
+                dateLabel.textContent = `${date.getMonth() + 1}/${date.getDate()}`;
+                bar.appendChild(dateLabel);
+                
+                chartContainer.appendChild(bar);
+            });
+        }
+        
+        function updateAvailableRewards() {
+            const rewardsElement = document.getElementById('available-rewards');
+            if (totalPoints >= 80) {
+                rewardsElement.innerHTML = '<span style="color:green;">✓ 恭喜！您已获得今日奖励：30分钟无负罪感娱乐时间</span>';
+            } else {
+                rewardsElement.textContent = `还需${80 - totalPoints}分才能解锁今日奖励`;
+            }
+        }
+        
+        function claimReward() {
+            if (totalPoints >= 80) {
+                alert('奖励已领取！享受您的30分钟娱乐时间吧！');
+            } else {
+                alert(`尚未达到兑换要求，还需${80 - totalPoints}分`);
+            }
+        }
+        
+        // 添加触摸事件支持
+        document.querySelectorAll('.nav-tab, .btn, .checkbox, .stats-tab').forEach(element => {
+            element.addEventListener('touchstart', function() {
+                this.style.opacity = '0.7';
+            });
+            
+            element.addEventListener('touchend', function() {
+                this.style.opacity = '1';
+            });
+        });
+        
+        // 防止iOS缩放
+        document.addEventListener('touchstart', function(event) {
+            if (event.touches.length > 1) {
+                event.preventDefault();
+            }
+        }, { passive: false });
+        
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+</body>
+</html>
